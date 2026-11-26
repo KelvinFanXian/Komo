@@ -29,7 +29,7 @@ Komo 是供本机多 Agent 开发时使用的原生 macOS 服务面板。它从�
 
 ## 软件形象
 
-应用名使用 **Komo**，副题“心天之眼”。图标是一只以天穹之眼观察分支的守望妖怪：独眼虹膜内有星空与心形高光，枝角上的彩色光点象征同时运行的服务。图标使用内置图像生成工具制作，最终位图保存在 `Resources/AppIcon.png`。生成提示词的核心是 “original small mythic yokai creature called the Eye of the Heart Sky; one luminous celestial eye; compact indigo body; branch-like horns with colored light nodes; warm ivory rounded-square macOS icon; no text or UI”。
+应用名使用 **Komo**，副题“心天之眼”。图标采用用户选定的方向：冷白雾感中若隐若现的小生物，圆框双眼是小尺寸下的主要识别点。最终位图保存在 `Resources/AppIcon.png`。使用内置图像生成工具重绘，提示词核心为 “minimalist watchful spirit; oversized round black glasses and bright pupils; soft misty cool-gray ears; cool-white rounded macOS icon; no yellow or text”。生成图的外围边缘经确定性透明化处理，避免背景杂点进入 Dock。
 
 ## 验收场景
 
