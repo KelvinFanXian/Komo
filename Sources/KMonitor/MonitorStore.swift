@@ -60,7 +60,7 @@ final class MonitorStore: ObservableObject {
         pollingTask = Task { [weak self] in
             let clock = ContinuousClock()
             while !Task.isCancelled {
-                let nextTick = clock.now.advanced(by: .seconds(5))
+                let nextTick = clock.now.advanced(by: .seconds(1))
                 if let self {
                     await self.refresh()
                 } else {

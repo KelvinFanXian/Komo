@@ -105,11 +105,6 @@ struct DashboardView: View {
             .textFieldStyle(.roundedBorder)
             .frame(width: 280)
             .frame(maxWidth: .infinity)
-            .overlay(alignment: .trailing) {
-                Button { Task { await store.refresh() } } label: {
-                    Label("刷新", systemImage: "arrow.clockwise")
-                }
-            }
             .padding(.horizontal, 26)
             .padding(.vertical, 14)
     }
