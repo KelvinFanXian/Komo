@@ -19,7 +19,7 @@
 | 图标与打包 | 已完成 | 用户选定的“心天之眼”图标，App 打包及签名通过 |
 | 构建与验证 | 已完成首版自动验证 | 见 `TEST_REPORT.md` |
 | 本机安装 | 已完成 | 已安装至 `/Applications/Komo.app`，校验并从安装位置启动通过 |
-| GitHub | 远端已创建 | `https://github.com/KelvinFanXian/Komo.git`；按项目规则推送 `main` |
+| GitHub | `main` 已推送 | [Komo 仓库](https://github.com/KelvinFanXian/Komo)；本机 `origin` 使用 SSH |
 
 ## 已知限制
 
