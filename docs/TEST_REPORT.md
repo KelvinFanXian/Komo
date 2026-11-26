@@ -18,6 +18,7 @@
 - 更名为 Komo 后，`swift test --disable-sandbox` 的 7 项测试通过，Release 构建及签名通过；`/Applications/Komo.app` 与构建产物主程序 SHA-256 一致，并从安装路径启动。
 - 用真实键鼠事件和辅助功能焦点状态复核：启动为 `AXWindow`，⌘F 为 `AXTextField`，框内点击保持 `AXTextField`，框外点击与 Esc 均回到 `AXWindow`。
 - 在搜索框输入 `abc` 后右侧显示 ×；真实点击 × 后输入清空，焦点仍为 `AXTextField`，过滤结果随之恢复。
+- 服务目录末尾的复制图标已完成窗口视觉检查；真实点击后，剪贴板字符串与该服务完整 worktree 路径一致。
 - 已将完成的首版快进合入 `main`，通过 SSH 首次推送到 `KelvinFanXian/Komo`；后续按 `AGENTS.md` 在 `main` 中文提交并推送。
 
 ## 待人工走查

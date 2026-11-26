@@ -262,11 +262,26 @@ struct DashboardView: View {
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(Palette.teal)
                 }
-                Text(service.worktree)
-                    .font(.caption.monospaced())
+                HStack(spacing: 6) {
+                    Text(service.worktree)
+                        .font(.caption.monospaced())
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .textSelection(.enabled)
+                    Button {
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(service.worktree, forType: .string)
+                    } label: {
+                        Image(systemName: "doc.on.doc")
+                            .font(.caption)
+                    }
+                    .buttonStyle(.plain)
                     .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .textSelection(.enabled)
+                    .fixedSize()
+                    .help("复制完整目录")
+                    .accessibilityLabel("复制 \(service.repositoryName) 目录")
+                }
                 Text("\(service.command) · PID \(service.pid) · \(service.addresses.joined(separator: ", "))")
                     .font(.caption)
                     .foregroundStyle(.tertiary)
