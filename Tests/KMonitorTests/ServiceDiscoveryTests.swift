@@ -74,4 +74,21 @@ final class ServiceDiscoveryTests: XCTestCase {
         let remaining = try ServiceScanner.scan(rootFilter: projectRoot)
         XCTAssertFalse(remaining.contains { $0.pid == service.pid && $0.ports.contains(port) })
     }
+
+    @MainActor
+    func testStopsOnlyVisibleBranchServicesWhenRequested() async throws {
+        guard let value = ProcessInfo.processInfo.environment["KMONITOR_STOP_PORTS"] else { return }
+        let ports = Set(value.split(separator: ",").compactMap { Int($0) })
+        XCTAssertEqual(ports.count, 2)
+        let projectRoot = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().path
+        let targets = try ServiceScanner.scan(rootFilter: projectRoot).filter { !ports.isDisjoint(with: $0.ports) }
+        XCTAssertEqual(targets.count, 2)
+        XCTAssertTrue(targets.allSatisfy { $0.branch == "feature/branchscope" })
+        let store = MonitorStore()
+        await store.stop(targets)
+        XCTAssertFalse(store.isStopping)
+        XCTAssertNil(store.message)
+        let remaining = try ServiceScanner.scan(rootFilter: projectRoot)
+        XCTAssertFalse(remaining.contains { !ports.isDisjoint(with: $0.ports) })
+    }
 }

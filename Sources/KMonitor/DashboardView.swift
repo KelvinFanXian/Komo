@@ -11,7 +11,30 @@ private enum Palette {
 struct DashboardView: View {
     @EnvironmentObject private var store: MonitorStore
     @State private var search = ""
-    @State private var pendingStop: MonitoredService?
+    @State private var collapsedBranches: Set<String> = []
+    @State private var pendingStop: StopRequest?
+
+    private enum StopRequest {
+        case service(MonitoredService)
+        case branch(String, [MonitoredService])
+
+        var services: [MonitoredService] {
+            switch self {
+            case .service(let service): [service]
+            case .branch(_, let services): services
+            }
+        }
+
+        var detail: String {
+            switch self {
+            case .service(let service):
+                return "\(service.repositoryName) · PID \(service.pid) · 端口 \(service.ports.map(String.init).joined(separator: ", "))。操作前会重新核对进程身份。"
+            case .branch(let branch, let services):
+                let names = services.map { "\($0.repositoryName):\($0.ports.map(String.init).joined(separator: ","))" }
+                return "\(branch) 的 \(services.count) 个服务：\(names.joined(separator: "、"))。将逐个核对进程身份后停止。"
+            }
+        }
+    }
 
     private var visibleCount: Int {
         store.branches.reduce(0) { $0 + store.services(in: $1, matching: search).count }
@@ -49,15 +72,15 @@ struct DashboardView: View {
             get: { pendingStop != nil },
             set: { if !$0 { pendingStop = nil } }
         )) {
-            Button("发送正常停止信号", role: .destructive) {
-                guard let service = pendingStop else { return }
+            Button(pendingStop?.services.count == 1 ? "停止服务" : "统一关闭服务", role: .destructive) {
+                guard let request = pendingStop else { return }
                 pendingStop = nil
-                Task { await store.stop(service) }
+                Task { await store.stop(request.services) }
             }
             Button("取消", role: .cancel) { pendingStop = nil }
         } message: {
-            if let service = pendingStop {
-                Text("\(service.repositoryName) · PID \(service.pid) · 端口 \(service.ports.map(String.init).joined(separator: ", "))。操作前会重新核对进程身份。")
+            if let request = pendingStop {
+                Text(request.detail)
             }
         }
         .alert("KMonitor", isPresented: Binding(
@@ -71,31 +94,17 @@ struct DashboardView: View {
     }
 
     private var header: some View {
-        HStack(alignment: .center, spacing: 18) {
-            Image(nsImage: Bundle.main.url(forResource: "AppIcon", withExtension: "icns")
-                .flatMap(NSImage.init(contentsOf:)) ?? NSImage())
-                .resizable()
-                .frame(width: 62, height: 62)
-                .clipShape(RoundedRectangle(cornerRadius: 14))
-            VStack(alignment: .leading, spacing: 3) {
-                Text("KMonitor")
-                    .font(.system(size: 28, weight: .bold, design: .rounded))
-                    .foregroundStyle(Palette.ink)
-                Text("心天之眼 · 看清每个服务所在的分支")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
+        HStack(spacing: 12) {
             Spacer()
             TextField("搜索分支、项目或端口", text: $search)
                 .textFieldStyle(.roundedBorder)
-                .frame(width: 250)
+                .frame(width: 280)
             Button { Task { await store.refresh() } } label: {
                 Label("刷新", systemImage: "arrow.clockwise")
             }
-            .disabled(store.isScanning)
         }
         .padding(.horizontal, 26)
-        .padding(.vertical, 20)
+        .padding(.vertical, 14)
     }
 
     private var emptyState: some View {
@@ -117,22 +126,40 @@ struct DashboardView: View {
     }
 
     private func branchSection(_ branch: String, items: [MonitoredService]) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 10) {
-                Image(systemName: "point.3.connected.trianglepath.dotted")
+        let collapsed = collapsedBranches.contains(branch)
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Button {
+                    if collapsed {
+                        collapsedBranches.remove(branch)
+                    } else {
+                        collapsedBranches.insert(branch)
+                    }
+                } label: {
+                    HStack(spacing: 10) {
+                        Image(systemName: collapsed ? "chevron.right" : "chevron.down")
+                            .font(.caption.weight(.bold))
+                        Image(systemName: "point.3.connected.trianglepath.dotted")
+                        Text(branch)
+                            .font(.system(.title3, design: .rounded, weight: .semibold))
+                            .foregroundStyle(Palette.ink)
+                        Text("\(items.count)")
+                            .font(.caption.weight(.bold))
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(Palette.indigo.opacity(0.09), in: Capsule())
+                    }
                     .foregroundStyle(Palette.indigo)
-                Text(branch)
-                    .font(.system(.title3, design: .rounded, weight: .semibold))
-                    .foregroundStyle(Palette.ink)
-                Text("\(items.count)")
-                    .font(.caption.weight(.bold))
-                    .foregroundStyle(Palette.indigo)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
-                    .background(Palette.indigo.opacity(0.09), in: Capsule())
+                }
+                .buttonStyle(.plain)
+                Spacer()
+                Button("统一关闭服务") { pendingStop = .branch(branch, items) }
+                    .disabled(store.isStopping)
             }
-            ForEach(items) { service in
-                serviceCard(service)
+            if !collapsed {
+                ForEach(items) { service in
+                    serviceCard(service)
+                }
             }
         }
     }
@@ -175,8 +202,8 @@ struct DashboardView: View {
             if let url = service.localURL {
                 Button("打开") { NSWorkspace.shared.open(url) }
             }
-            Button("停止") { pendingStop = service }
-                .disabled(store.stoppingPID != nil)
+            Button("停止") { pendingStop = .service(service) }
+                .disabled(store.isStopping)
             Button("隐藏") { store.hide(service) }
         }
         .padding(.horizontal, 17)

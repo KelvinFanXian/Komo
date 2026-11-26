@@ -4,8 +4,8 @@ import Foundation
 @MainActor
 final class MonitorStore: ObservableObject {
     @Published private(set) var services: [MonitoredService] = []
-    @Published private(set) var isScanning = false
-    @Published private(set) var stoppingPID: Int32?
+    private var isScanning = false
+    @Published private(set) var isStopping = false
     @Published private(set) var lastUpdated: Date?
     @Published var message: String?
     @Published var rootFilter: String? {
@@ -47,7 +47,7 @@ final class MonitorStore: ObservableObject {
         }.value
         switch result {
         case .success(let found):
-            services = found
+            if services != found { services = found }
             lastUpdated = Date()
         case .failure(let error):
             message = error.localizedDescription
@@ -106,14 +106,20 @@ final class MonitorStore: ObservableObject {
         "\(service.worktree)::\(service.command)::\(service.ports.map(String.init).joined(separator: ","))"
     }
 
-    func stop(_ service: MonitoredService) async {
-        guard stoppingPID == nil else { return }
-        stoppingPID = service.pid
-        let result = await Task.detached(priority: .userInitiated) {
-            Result { try ServiceController.stop(service) }
-        }.value
+    func stop(_ targets: [MonitoredService]) async {
+        guard !isStopping, !targets.isEmpty else { return }
+        isStopping = true
+        var failures: [String] = []
+        for service in targets {
+            let result = await Task.detached(priority: .userInitiated) {
+                Result { try ServiceController.stop(service) }
+            }.value
+            if case .failure(let error) = result {
+                failures.append("\(service.repositoryName)：\(error.localizedDescription)")
+            }
+        }
+        isStopping = false
         await refresh()
-        if case .failure(let error) = result { message = error.localizedDescription }
-        stoppingPID = nil
+        if !failures.isEmpty { message = failures.joined(separator: "\n") }
     }
 }
