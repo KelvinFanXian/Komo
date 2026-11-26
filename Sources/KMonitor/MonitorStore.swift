@@ -12,6 +12,7 @@ final class MonitorStore: ObservableObject {
         didSet { UserDefaults.standard.set(rootFilter, forKey: "rootFilter") }
     }
     @Published private(set) var hiddenServices: Set<String>
+    private var pollingTask: Task<Void, Never>?
 
     init() {
         rootFilter = UserDefaults.standard.string(forKey: "rootFilter")
@@ -54,12 +55,23 @@ final class MonitorStore: ObservableObject {
         isScanning = false
     }
 
-    func pollWhileVisible() async {
-        await refresh()
-        while !Task.isCancelled {
-            try? await Task.sleep(for: .seconds(5))
-            guard !Task.isCancelled else { break }
-            await refresh()
+    func startPolling() {
+        guard pollingTask == nil else { return }
+        pollingTask = Task { [weak self] in
+            let clock = ContinuousClock()
+            while !Task.isCancelled {
+                let nextTick = clock.now.advanced(by: .seconds(5))
+                if let self {
+                    await self.refresh()
+                } else {
+                    break
+                }
+                do {
+                    try await clock.sleep(until: nextTick)
+                } catch {
+                    break
+                }
+            }
         }
     }
 

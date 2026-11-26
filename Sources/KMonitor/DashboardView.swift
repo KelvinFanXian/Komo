@@ -44,7 +44,7 @@ struct DashboardView: View {
             footer
         }
         .background(Palette.paper)
-        .task { await store.pollWhileVisible() }
+        .task { store.startPolling() }
         .alert("停止本地服务？", isPresented: Binding(
             get: { pendingStop != nil },
             set: { if !$0 { pendingStop = nil } }
@@ -244,6 +244,6 @@ struct MenuPanelView: View {
         }
         .padding(16)
         .frame(width: 260)
-        .task { await store.refresh() }
+        .task { store.startPolling() }
     }
 }
