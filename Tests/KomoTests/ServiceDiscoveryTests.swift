@@ -1,7 +1,12 @@
 import XCTest
-@testable import KMonitor
+@testable import Komo
 
 final class ServiceDiscoveryTests: XCTestCase {
+    private func projectBranch(at root: String) throws -> String {
+        let output = try XCTUnwrap(CommandOutput.read("/usr/bin/git", ["-C", root, "branch", "--show-current"]))
+        return output.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     func testParsesSeveralPortsWithoutMixingProcesses() {
         let output = """
         p42
@@ -49,9 +54,9 @@ final class ServiceDiscoveryTests: XCTestCase {
     }
 
     func testLiveServiceAtExpectedPortWhenRequested() throws {
-        guard let value = ProcessInfo.processInfo.environment["KMONITOR_EXPECT_PORT"],
+        guard let value = ProcessInfo.processInfo.environment["KOMO_EXPECT_PORT"],
               let port = Int(value) else { return }
-        let expectedBranch = ProcessInfo.processInfo.environment["KMONITOR_EXPECT_BRANCH"]
+        let expectedBranch = ProcessInfo.processInfo.environment["KOMO_EXPECT_BRANCH"]
         let services = try ServiceScanner.scan(rootFilter: nil)
         let service = try XCTUnwrap(services.first { $0.ports.contains(port) })
         if let expectedBranch { XCTAssertEqual(service.branch, expectedBranch) }
@@ -59,17 +64,17 @@ final class ServiceDiscoveryTests: XCTestCase {
     }
 
     func testInfrastructurePortIsExcludedWhenRequested() throws {
-        guard let value = ProcessInfo.processInfo.environment["KMONITOR_EXCLUDE_PORT"],
+        guard let value = ProcessInfo.processInfo.environment["KOMO_EXCLUDE_PORT"],
               let port = Int(value) else { return }
         XCTAssertFalse(try ServiceScanner.scan(rootFilter: nil).contains { $0.ports.contains(port) })
     }
 
     func testStopsOnlyRequestedTemporaryServiceWhenRequested() throws {
-        guard let value = ProcessInfo.processInfo.environment["KMONITOR_STOP_PORT"],
+        guard let value = ProcessInfo.processInfo.environment["KOMO_STOP_PORT"],
               let port = Int(value) else { return }
         let projectRoot = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().path
         let service = try XCTUnwrap(ServiceScanner.scan(rootFilter: projectRoot).first { $0.ports.contains(port) })
-        XCTAssertEqual(service.branch, "feature/branchscope")
+        XCTAssertEqual(service.branch, try projectBranch(at: projectRoot))
         try ServiceController.stop(service)
         let remaining = try ServiceScanner.scan(rootFilter: projectRoot)
         XCTAssertFalse(remaining.contains { $0.pid == service.pid && $0.ports.contains(port) })
@@ -77,13 +82,14 @@ final class ServiceDiscoveryTests: XCTestCase {
 
     @MainActor
     func testStopsOnlyVisibleBranchServicesWhenRequested() async throws {
-        guard let value = ProcessInfo.processInfo.environment["KMONITOR_STOP_PORTS"] else { return }
+        guard let value = ProcessInfo.processInfo.environment["KOMO_STOP_PORTS"] else { return }
         let ports = Set(value.split(separator: ",").compactMap { Int($0) })
         XCTAssertEqual(ports.count, 2)
         let projectRoot = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().path
         let targets = try ServiceScanner.scan(rootFilter: projectRoot).filter { !ports.isDisjoint(with: $0.ports) }
         XCTAssertEqual(targets.count, 2)
-        XCTAssertTrue(targets.allSatisfy { $0.branch == "feature/branchscope" })
+        let branch = try projectBranch(at: projectRoot)
+        XCTAssertTrue(targets.allSatisfy { $0.branch == branch })
         let store = MonitorStore()
         await store.stop(targets)
         XCTAssertFalse(store.isStopping)

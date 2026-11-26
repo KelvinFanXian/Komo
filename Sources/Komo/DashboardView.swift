@@ -8,9 +8,46 @@ private enum Palette {
     static let paper = Color(red: 0.985, green: 0.977, blue: 0.957)
 }
 
+private struct SearchFieldFrameReader: NSViewRepresentable {
+    let onChange: (CGRect) -> Void
+
+    func makeNSView(context: Context) -> TrackingView {
+        let view = TrackingView()
+        view.onChange = onChange
+        return view
+    }
+
+    func updateNSView(_ view: TrackingView, context: Context) {
+        view.onChange = onChange
+        DispatchQueue.main.async { view.reportFrame() }
+    }
+
+    final class TrackingView: NSView {
+        var onChange: ((CGRect) -> Void)?
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            DispatchQueue.main.async { self.reportFrame() }
+        }
+
+        override func layout() {
+            super.layout()
+            reportFrame()
+        }
+
+        func reportFrame() {
+            guard window != nil else { return }
+            onChange?(convert(bounds, to: nil))
+        }
+    }
+}
+
 struct DashboardView: View {
     @EnvironmentObject private var store: MonitorStore
     @State private var search = ""
+    @State private var searchFrame: CGRect = .zero
+    @FocusState private var searchFocused: Bool
+    @State private var clickMonitor: Any?
     @State private var collapsedBranches: Set<String> = []
     @State private var pendingStop: StopRequest?
 
@@ -74,7 +111,23 @@ struct DashboardView: View {
             footer
         }
         .background(Palette.paper)
+        .defaultFocus($searchFocused, false)
+        .focusedSceneValue(\.focusSearchField, { searchFocused = true })
         .task { store.startPolling() }
+        .onAppear {
+            DispatchQueue.main.async { clearSearchFocus() }
+            guard clickMonitor == nil else { return }
+            clickMonitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDown) { event in
+                guard let window = event.window, window.title == "Komo" else { return event }
+                guard !searchFrame.contains(event.locationInWindow) else { return event }
+                DispatchQueue.main.async { clearSearchFocus() }
+                return event
+            }
+        }
+        .onDisappear {
+            if let clickMonitor { NSEvent.removeMonitor(clickMonitor) }
+            clickMonitor = nil
+        }
         .alert("停止本地服务？", isPresented: Binding(
             get: { pendingStop != nil },
             set: { if !$0 { pendingStop = nil } }
@@ -90,7 +143,7 @@ struct DashboardView: View {
                 Text(request.detail)
             }
         }
-        .alert("KMonitor", isPresented: Binding(
+        .alert("Komo", isPresented: Binding(
             get: { store.message != nil },
             set: { if !$0 { store.message = nil } }
         )) {
@@ -100,13 +153,42 @@ struct DashboardView: View {
         }
     }
 
+    private func clearSearchFocus() {
+        searchFocused = false
+        NSApp.windows.first { $0.title == "Komo" }?.makeFirstResponder(nil)
+    }
+
     private var header: some View {
-        TextField("搜索分支、项目或端口", text: $search)
-            .textFieldStyle(.roundedBorder)
-            .frame(width: 280)
-            .frame(maxWidth: .infinity)
-            .padding(.horizontal, 26)
-            .padding(.vertical, 14)
+        HStack {
+            Spacer()
+            TextField("搜索分支、项目或端口", text: $search)
+                .textFieldStyle(.roundedBorder)
+                .controlSize(.small)
+                .frame(width: 220)
+                .overlay(alignment: .trailing) {
+                    if !search.isEmpty {
+                        Button {
+                            search = ""
+                            searchFocused = true
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("清除搜索")
+                        .help("清除搜索")
+                        .padding(.trailing, 6)
+                    }
+                }
+                .focused($searchFocused)
+                .onExitCommand { clearSearchFocus() }
+                .background(SearchFieldFrameReader { frame in
+                    if searchFrame != frame { searchFrame = frame }
+                })
+        }
+        .padding(.horizontal, 26)
+        .padding(.vertical, 7)
     }
 
     private var emptyState: some View {
@@ -252,7 +334,7 @@ struct MenuPanelView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("KMonitor").font(.headline)
+                Text("Komo").font(.headline)
                 Spacer()
                 Text("\(store.visibleServices.count) 个服务")
                     .foregroundStyle(.secondary)

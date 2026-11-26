@@ -1,10 +1,10 @@
-<p align="center"><img src="Resources/AppIcon.png" width="160" alt="KMonitor 图标"></p>
+<p align="center"><img src="Resources/AppIcon.png" width="160" alt="Komo 图标"></p>
 
-# KMonitor
+# Komo
 
 **心天之眼，识别每个本地服务所在的分支。**
 
-KMonitor 是一款 macOS 原生应用，面向同时用 Agent 在多个 Git worktree 开发、启动服务的人。它扫描当前用户的 TCP 监听进程，从实际工作目录读取 Git 分支，在一个面板中查看并手动停止服务。应用名称沿用项目名 KMonitor；形象是一只“心天之眼”守望妖怪。
+Komo 是一款 macOS 原生应用，面向同时用 Agent 在多个 Git worktree 开发、启动服务的人。它扫描当前用户的 TCP 监听进程，从实际工作目录读取 Git 分支，在一个面板中查看并手动停止服务。应用名称沿用项目名 Komo；形象是一只“心天之眼”守望妖怪。
 
 ## 首版功能
 
@@ -39,27 +39,28 @@ flowchart LR
 ```bash
 swift test --disable-sandbox
 ./Scripts/build-app.sh
-open .build/app/KMonitor.app
+open .build/app/Komo.app
 ```
 
 项目不依赖第三方运行库。`lsof` 与 `git` 使用 macOS 上的系统命令。首次打开时会自动发现当前用户在主目录下开发 worktree 中启动的监听进程；其他目录可手动选择。
 
 ## 安装到当前 Mac
 
-退出正在运行的 KMonitor 后，将构建好的应用复制到系统“应用程序”目录：
+退出正在运行的 Komo 后，将构建好的应用复制到系统“应用程序”目录：
 
 ```bash
-ditto .build/app/KMonitor.app /Applications/KMonitor.app
-open /Applications/KMonitor.app
+ditto .build/app/Komo.app /Applications/Komo.app
+open /Applications/Komo.app
 ```
 
 ## 使用说明
 
 1. 启动由 Codex 或其他 Agent 开发的本地服务。
-2. 打开 KMonitor，在分支分组下核对服务所在 worktree 和端口。
-3. 点击分支标题可折叠服务。需要停止时点单项“停止”或分支右侧“关闭分支服务”，核对弹窗内容；KMonitor 会对每个目标再次核对 PID、用户、worktree 和端口。
+2. 打开 Komo，在分支分组下核对服务所在 worktree 和端口。
+3. 点击分支标题可折叠服务。需要停止时点单项“停止”或分支右侧“关闭分支服务”，核对弹窗内容；Komo 会对每个目标再次核对 PID、用户、worktree 和端口。
+4. 按 ⌘F 聚焦右上角搜索框；输入时可点框内右侧的 × 清除过滤，按 Esc 或点击搜索框以外的窗口区域可退出焦点。
 
-如果某服务被父进程或进程管理器自动重启，它会在刷新后重新出现。KMonitor 不会自动强制杀进程。端口监听只说明进程在提供连接，不代表业务接口健康。
+如果某服务被父进程或进程管理器自动重启，它会在刷新后重新出现。Komo 不会自动强制杀进程。端口监听只说明进程在提供连接，不代表业务接口健康。
 
 ## 文档
 

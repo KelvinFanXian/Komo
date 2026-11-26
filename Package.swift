@@ -2,11 +2,11 @@
 import PackageDescription
 
 let package = Package(
-    name: "KMonitor",
+    name: "Komo",
     platforms: [.macOS(.v15)],
-    products: [.executable(name: "KMonitor", targets: ["KMonitor"])],
+    products: [.executable(name: "Komo", targets: ["Komo"])],
     targets: [
-        .executableTarget(name: "KMonitor", path: "Sources/KMonitor"),
-        .testTarget(name: "KMonitorTests", dependencies: ["KMonitor"], path: "Tests/KMonitorTests")
+        .executableTarget(name: "Komo", path: "Sources/Komo"),
+        .testTarget(name: "KomoTests", dependencies: ["Komo"], path: "Tests/KomoTests")
     ]
 )

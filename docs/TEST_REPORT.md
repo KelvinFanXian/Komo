@@ -1,4 +1,4 @@
-# KMonitor 首版验证记录
+# Komo 首版验证记录
 
 维护人：范显
 
@@ -8,13 +8,16 @@
 - 48090：识别 `ym2fog-api-dev` worktree 为 `dev_yunbiao`。
 - 5180：识别 `ym2fog-admin-ui-history` worktree 为 `feature/yunbiao-history`；与静态启动配置的条目不同。
 - 用户走查发现 Homebrew 的 Redis 6379 无需显示；收紧默认范围后，本机复验 6379 不在服务列表中，5180 仍被正确识别。新增可恢复的单项隐藏。
-- 58991：在本项目目录启动临时 Python HTTP 服务，KMonitor 二次扫描后发送 SIGTERM，端口退出；原有业务服务未受影响。
+- 58991：在本项目目录启动临时 Python HTTP 服务，更名前的 KMonitor 二次扫描后发送 SIGTERM，端口退出；原有业务服务未受影响。
 - `./Scripts/build-app.sh`：Release 构建、`AppIcon.icns` 生成、ad-hoc 签名和 `codesign --verify --deep --strict` 通过。
-- `open .build/app/KMonitor.app` 后进程保持运行。
-- 将构建产物安装至 `/Applications/KMonitor.app`：安装包签名校验通过，主程序 SHA-256 与构建产物一致，进程从安装路径启动。
+- 更名前使用 `open .build/app/KMonitor.app`，进程保持运行。
+- 更名前将应用安装至 `/Applications/KMonitor.app`：签名校验通过，主程序 SHA-256 与构建产物一致，进程从安装路径启动。
 - 本次用 58992、58993 两个临时 HTTP 服务验证“关闭分支服务”：两项均在 `feature/branchscope`，逐个复核后停止，两个端口均不再监听；其他业务服务未操作。
 - 从 `/Applications` 启动 Release 应用并截取窗口：顶部搜索居中，右上角无刷新按钮；分支标题、折叠箭头和“关闭分支服务”均可见。
 - 相隔约 2 秒截取安装版窗口，底栏更新时间由 10:31:27 变为 10:31:29，确认自动轮询持续工作。
+- 更名为 Komo 后，`swift test --disable-sandbox` 的 7 项测试通过，Release 构建及签名通过；`/Applications/Komo.app` 与构建产物主程序 SHA-256 一致，并从安装路径启动。
+- 用真实键鼠事件和辅助功能焦点状态复核：启动为 `AXWindow`，⌘F 为 `AXTextField`，框内点击保持 `AXTextField`，框外点击与 Esc 均回到 `AXWindow`。
+- 在搜索框输入 `abc` 后右侧显示 ×；真实点击 × 后输入清空，焦点仍为 `AXTextField`，过滤结果随之恢复。
 
 ## 待人工走查
 
