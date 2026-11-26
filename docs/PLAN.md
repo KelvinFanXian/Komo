@@ -27,9 +27,9 @@ Komo 是供本机多 Agent 开发时使用的原生 macOS 服务面板。它从�
 - 手动刷新遇到后台扫描仍在执行时直接跳过；结果未变化时不重置服务列表，避免不必要的闪动。
 - 进程存活及端口监听不等于业务 HTTP 健康；首版只报告监听状态。
 
-## 软件形象
+## 图标
 
-应用名使用 **Komo**，副题“心天之眼”。图标采用用户选定的方向：冷白雾感中若隐若现的小生物，圆框双眼是小尺寸下的主要识别点。最终位图保存在 `Resources/AppIcon.png`。使用内置图像生成工具重绘，提示词核心为 “minimalist watchful spirit; oversized round black glasses and bright pupils; soft misty cool-gray ears; cool-white rounded macOS icon; no yellow or text”。生成图的外围边缘经确定性透明化处理，避免背景杂点进入 Dock。
+应用名为 **Komo**。图标源文件为 `Resources/AppIcon.png`，使用冷白底和圆框双眼；构建脚本据此生成应用所需的 `.icns` 文件。
 
 ## 验收场景
 
