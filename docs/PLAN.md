@@ -15,6 +15,8 @@ KMonitor 是供本机多 Agent 开发时使用的原生 macOS 服务面板。它
 4. 打开本地服务地址；对已识别服务可手动发送正常终止信号，操作前复核进程、端口和 worktree。
 5. 原生 SwiftUI 窗口及菜单栏快捷入口；提供本机可构建的 App 图标与打包脚本。
 
+功能流程图见 [README 的 Mermaid 功能描述](../README.md#功能描述mermaid)。
+
 ## 边界与约定
 
 - `lsof` 监听记录是状态事实源，`.claude/launch.json` 等静态配置只可作为后续辅助线索。
