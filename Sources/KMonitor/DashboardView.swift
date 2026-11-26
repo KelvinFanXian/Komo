@@ -25,6 +25,13 @@ struct DashboardView: View {
             }
         }
 
+        var actionTitle: String {
+            switch self {
+            case .service: "停止服务"
+            case .branch: "关闭分支服务"
+            }
+        }
+
         var detail: String {
             switch self {
             case .service(let service):
@@ -72,7 +79,7 @@ struct DashboardView: View {
             get: { pendingStop != nil },
             set: { if !$0 { pendingStop = nil } }
         )) {
-            Button(pendingStop?.services.count == 1 ? "停止服务" : "统一关闭服务", role: .destructive) {
+            Button(pendingStop?.actionTitle ?? "停止服务", role: .destructive) {
                 guard let request = pendingStop else { return }
                 pendingStop = nil
                 Task { await store.stop(request.services) }
@@ -94,17 +101,17 @@ struct DashboardView: View {
     }
 
     private var header: some View {
-        HStack(spacing: 12) {
-            Spacer()
-            TextField("搜索分支、项目或端口", text: $search)
-                .textFieldStyle(.roundedBorder)
-                .frame(width: 280)
-            Button { Task { await store.refresh() } } label: {
-                Label("刷新", systemImage: "arrow.clockwise")
+        TextField("搜索分支、项目或端口", text: $search)
+            .textFieldStyle(.roundedBorder)
+            .frame(width: 280)
+            .frame(maxWidth: .infinity)
+            .overlay(alignment: .trailing) {
+                Button { Task { await store.refresh() } } label: {
+                    Label("刷新", systemImage: "arrow.clockwise")
+                }
             }
-        }
-        .padding(.horizontal, 26)
-        .padding(.vertical, 14)
+            .padding(.horizontal, 26)
+            .padding(.vertical, 14)
     }
 
     private var emptyState: some View {
@@ -153,7 +160,7 @@ struct DashboardView: View {
                 }
                 .buttonStyle(.plain)
                 Spacer()
-                Button("统一关闭服务") { pendingStop = .branch(branch, items) }
+                Button("关闭分支服务") { pendingStop = .branch(branch, items) }
                     .disabled(store.isStopping)
             }
             if !collapsed {
