@@ -8,6 +8,71 @@ private enum Palette {
     static let paper = Color(red: 0.985, green: 0.977, blue: 0.957)
 }
 
+private struct RuntimeLogo: View {
+    let runtime: ServiceRuntime
+    let command: String
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 6)
+                .fill(backgroundColor.opacity(0.12))
+            switch runtime {
+            case .node:
+                Image(systemName: "hexagon.fill")
+                    .font(.system(size: 18))
+                    .overlay {
+                        Text("N")
+                            .font(.system(size: 10, weight: .heavy, design: .rounded))
+                            .foregroundStyle(.white)
+                    }
+            case .java:
+                Image(systemName: "cup.and.saucer.fill")
+                    .font(.system(size: 17, weight: .semibold))
+            case .redis:
+                Image(systemName: "square.stack.3d.up.fill")
+                    .font(.system(size: 17, weight: .semibold))
+            case .other:
+                Image(systemName: "terminal.fill")
+                    .font(.system(size: 16, weight: .semibold))
+            }
+        }
+        .foregroundStyle(backgroundColor)
+        .frame(width: 25, height: 25)
+        .help("\(runtime.displayName) · \(command)")
+        .accessibilityLabel("\(runtime.displayName)，进程 \(command)")
+    }
+
+    private var backgroundColor: Color {
+        switch runtime {
+        case .node: Color(red: 0.25, green: 0.55, blue: 0.22)
+        case .java: Color(red: 0.80, green: 0.32, blue: 0.12)
+        case .redis: Color(red: 0.78, green: 0.19, blue: 0.20)
+        case .other: Palette.indigo
+        }
+    }
+}
+
+private struct ActionIconButton: View {
+    let title: String
+    let symbol: String
+    var tint: Color = Palette.indigo
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(tint)
+                .frame(width: 18, height: 18)
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.small)
+        .tint(tint)
+        .help(title)
+        .accessibilityLabel(title)
+    }
+}
+
 private struct SearchFieldFrameReader: NSViewRepresentable {
     let onChange: (CGRect) -> Void
 
@@ -236,8 +301,11 @@ struct DashboardView: View {
                     .foregroundStyle(Palette.indigo)
                 }
                 .buttonStyle(.plain)
+                .help(collapsed ? "展开 \(branch)" : "折叠 \(branch)")
                 Spacer()
-                Button("关闭分支服务") { pendingStop = .branch(branch, items) }
+                ActionIconButton(title: "关闭 \(branch) 分支的 \(items.count) 个服务", symbol: "power", tint: .red) {
+                    pendingStop = .branch(branch, items)
+                }
                     .disabled(store.isStopping)
             }
             if !collapsed {
@@ -258,9 +326,11 @@ struct DashboardView: View {
                     Text(service.repositoryName)
                         .font(.headline)
                         .foregroundStyle(Palette.ink)
-                    Text("监听中")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(Palette.teal)
+                    Circle()
+                        .fill(Palette.teal)
+                        .frame(width: 7, height: 7)
+                        .help("监听中")
+                        .accessibilityLabel("监听中")
                 }
                 HStack(spacing: 6) {
                     Text(service.worktree)
@@ -282,10 +352,13 @@ struct DashboardView: View {
                     .help("复制完整目录")
                     .accessibilityLabel("复制 \(service.repositoryName) 目录")
                 }
-                Text("\(service.command) · PID \(service.pid) · \(service.addresses.joined(separator: ", "))")
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-                    .lineLimit(1)
+                HStack(spacing: 7) {
+                    RuntimeLogo(runtime: service.runtime, command: service.command)
+                    Text("PID \(service.pid) · \(service.addresses.joined(separator: ", "))")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(1)
+                }
             }
             Spacer(minLength: 10)
             HStack(spacing: 5) {
@@ -299,11 +372,17 @@ struct DashboardView: View {
                 }
             }
             if let url = service.localURL {
-                Button("打开") { NSWorkspace.shared.open(url) }
+                ActionIconButton(title: "打开 \(url.absoluteString)", symbol: "arrow.up.right.square") {
+                    NSWorkspace.shared.open(url)
+                }
             }
-            Button("停止") { pendingStop = .service(service) }
+            ActionIconButton(title: "停止 \(service.repositoryName)", symbol: "stop.fill", tint: .red) {
+                pendingStop = .service(service)
+            }
                 .disabled(store.isStopping)
-            Button("隐藏") { store.hide(service) }
+            ActionIconButton(title: "隐藏 \(service.repositoryName)", symbol: "eye.slash", tint: .gray) {
+                store.hide(service)
+            }
         }
         .padding(.horizontal, 17)
         .padding(.vertical, 15)
@@ -318,23 +397,25 @@ struct DashboardView: View {
                 .foregroundStyle(Palette.teal)
             Spacer()
             if !store.hiddenServices.isEmpty {
-                Button("恢复隐藏的服务") { store.restoreHidden() }
-                    .font(.caption)
+                ActionIconButton(title: "恢复隐藏的服务", symbol: "eye") { store.restoreHidden() }
             }
             if let root = store.rootFilter {
-                Text(root)
+                Label(URL(fileURLWithPath: root).lastPathComponent, systemImage: "folder.fill")
                     .lineLimit(1)
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Button("清除过滤") { store.clearRoot() }
-                    .font(.caption)
+                    .help("当前工作区：\(root)")
+                ActionIconButton(title: "清除工作区过滤", symbol: "line.3.horizontal.decrease.circle") {
+                    store.clearRoot()
+                }
             }
-            Button("选择工作区…") { store.chooseRoot() }
-                .font(.caption)
+            ActionIconButton(title: "选择工作区", symbol: "folder") { store.chooseRoot() }
             if let date = store.lastUpdated {
-                Text("更新于 \(date.formatted(date: .omitted, time: .standard))")
-                    .font(.caption)
+                Image(systemName: "clock.arrow.circlepath")
+                    .font(.system(size: 14))
                     .foregroundStyle(.tertiary)
+                    .help("更新于 \(date.formatted(date: .omitted, time: .standard))")
+                    .accessibilityLabel("更新于 \(date.formatted(date: .omitted, time: .standard))")
             }
         }
         .padding(.horizontal, 26)
@@ -365,8 +446,14 @@ struct MenuPanelView: View {
                 .font(.caption)
             }
             Divider()
-            Button("打开服务面板") { openWindow(id: "main") }
-            Button("立即刷新") { Task { await store.refresh() } }
+            HStack {
+                ActionIconButton(title: "打开服务面板", symbol: "rectangle.on.rectangle") {
+                    openWindow(id: "main")
+                }
+                ActionIconButton(title: "立即刷新", symbol: "arrow.clockwise") {
+                    Task { await store.refresh() }
+                }
+            }
         }
         .padding(16)
         .frame(width: 260)

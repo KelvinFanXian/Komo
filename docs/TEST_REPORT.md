@@ -20,6 +20,7 @@
 - 在搜索框输入 `abc` 后右侧显示 ×；真实点击 × 后输入清空，焦点仍为 `AXTextField`，过滤结果随之恢复。
 - 服务目录末尾的复制图标已完成窗口视觉检查；真实点击后，剪贴板字符串与该服务完整 worktree 路径一致。
 - 圆框双眼新版图标：图像生成后清理外围透明边缘；128 px 缩略图确认双眼仍清晰。Release 打包、`codesign --verify --deep --strict` 通过；安装版 `.icns` 与构建产物逐字节一致，并从 `/Applications/Komo.app` 启动。
+- 服务类型图标与图形化操作：`swift test --disable-sandbox` 的 7 项测试通过，Release 构建及签名通过；安装版窗口中实测 Node.js 显示绿色六边形、Java 显示橙色咖啡杯、Redis 显示红色层叠图标，服务和分支操作按钮均为图标样式。
 - 已将完成的首版快进合入 `main`，通过 SSH 首次推送到 `KelvinFanXian/Komo`；后续按 `AGENTS.md` 在 `main` 中文提交并推送。
 
 ## 待人工走查

@@ -1,5 +1,31 @@
 import Foundation
 
+enum ServiceRuntime: Equatable {
+    case node
+    case java
+    case redis
+    case other
+
+    init(command: String) {
+        let name = URL(fileURLWithPath: command).lastPathComponent.lowercased()
+        switch name {
+        case "node", "nodejs": self = .node
+        case "java", "javaw": self = .java
+        default:
+            self = name == "redis" || name.hasPrefix("redis-") ? .redis : .other
+        }
+    }
+
+    var displayName: String {
+        switch self {
+        case .node: "Node.js"
+        case .java: "Java"
+        case .redis: "Redis"
+        case .other: "其他进程"
+        }
+    }
+}
+
 struct ListeningProcess: Sendable, Equatable {
     let pid: Int32
     let command: String
@@ -18,6 +44,7 @@ struct MonitoredService: Identifiable, Sendable, Equatable {
     let addresses: [String]
 
     var id: Int32 { pid }
+    var runtime: ServiceRuntime { ServiceRuntime(command: command) }
     var repositoryName: String { URL(fileURLWithPath: worktree).lastPathComponent }
     var primaryPort: Int? { ports.first }
     var localURL: URL? {
